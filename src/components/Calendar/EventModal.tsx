@@ -19,6 +19,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
     const [endTime, setEndTime] = useState('');
 
     const [isAllDay, setIsAllDay] = useState(false);
+    const [isCompleted, setIsCompleted] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -29,10 +30,12 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
                 setStartTime(format(new Date(existingEvent.start), "yyyy-MM-dd'T'HH:mm"));
                 setEndTime(format(new Date(existingEvent.end), "yyyy-MM-dd'T'HH:mm"));
                 setIsAllDay(existingEvent.isAllDay || false);
+                setIsCompleted(existingEvent.isCompleted || false);
             } else if (initialDate) {
                 setTitle('');
                 setDescription('');
                 setIsAllDay(false);
+                setIsCompleted(false);
                 // Default to 9 AM on the selected date
                 const start = new Date(initialDate);
                 start.setHours(9, 0, 0, 0);
@@ -53,7 +56,7 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
             description,
             start: new Date(startTime),
             end: new Date(endTime),
-            isCompleted: existingEvent ? existingEvent.isCompleted : false,
+            isCompleted,
             isAllDay
         });
         onClose();
@@ -138,15 +141,28 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
                     />
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                    <input
-                        type="checkbox"
-                        id="isAllDay"
-                        checked={isAllDay}
-                        onChange={e => setIsAllDay(e.target.checked)}
-                        style={{ width: '16px', height: '16px' }}
-                    />
-                    <label htmlFor="isAllDay" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>All day</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-lg)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                        <input
+                            type="checkbox"
+                            id="isAllDay"
+                            checked={isAllDay}
+                            onChange={e => setIsAllDay(e.target.checked)}
+                            style={{ width: '16px', height: '16px' }}
+                        />
+                        <label htmlFor="isAllDay" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>All day</label>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                        <input
+                            type="checkbox"
+                            id="isCompleted"
+                            checked={isCompleted}
+                            onChange={e => setIsCompleted(e.target.checked)}
+                            style={{ width: '16px', height: '16px' }}
+                        />
+                        <label htmlFor="isCompleted" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>Completed</label>
+                    </div>
                 </div>
 
                 {!isAllDay && (

@@ -153,7 +153,10 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onTodosChange, events, onEve
                                             {event.title}
                                         </span>
                                         <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-                                            {format(new Date(event.start), 'h:mm a')} - {format(new Date(event.end), 'h:mm a')}
+                                            {event.isAllDay
+                                                ? 'All Day'
+                                                : `${format(new Date(event.start), 'h:mm a')} - ${format(new Date(event.end), 'h:mm a')}`
+                                            }
                                         </span>
                                     </div>
                                 </div>

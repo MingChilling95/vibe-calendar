@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import CalendarView from './components/Calendar/CalendarView';
 import TodoList from './components/Todo/TodoList';
 import PomodoroTimer from './components/Timer/PomodoroTimer';
-import type { CalendarEvent, Todo } from './types';
+import type { CalendarEvent, Todo, Tag } from './types';
 
 type View = 'calendar' | 'tasks' | 'focus';
 
@@ -20,6 +20,52 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [tags, setTags] = useState<Tag[]>(() => {
+    const saved = localStorage.getItem('calendarTags');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Migration: Convert string tags to Tag objects
+  useEffect(() => {
+    let hasChanges = false;
+    const newTags = [...tags];
+    const newEvents = events.map(event => {
+      if (event.tags && event.tags.length > 0) {
+        hasChanges = true;
+        const eventTagIds: string[] = event.tagIds || [];
+
+        event.tags.forEach(tagName => {
+          // Check if tag already exists (by name)
+          let tag = newTags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+          if (!tag) {
+            // Create new tag
+            tag = {
+              id: crypto.randomUUID(),
+              name: tagName,
+              color: '#' + Math.floor(Math.random() * 16777215).toString(16) // Random color
+            };
+            newTags.push(tag);
+          }
+          if (!eventTagIds.includes(tag.id)) {
+            eventTagIds.push(tag.id);
+          }
+        });
+
+        return {
+          ...event,
+          tagIds: eventTagIds,
+          tags: undefined // Remove old tags
+        };
+      }
+      return event;
+    });
+
+    if (hasChanges) {
+      setTags(newTags);
+      setEvents(newEvents);
+    }
+  }, []); // Run once on mount
+
   // Persistence
   useEffect(() => {
     localStorage.setItem('calendarEvents', JSON.stringify(events));
@@ -28,6 +74,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('todos', JSON.stringify(todos));
   }, [todos]);
+
+  useEffect(() => {
+    localStorage.setItem('calendarTags', JSON.stringify(tags));
+  }, [tags]);
 
   const handleTodoDrop = (todoId: string, date: Date) => {
     const todo = todos.find(t => t.id === todoId);
@@ -110,6 +160,7 @@ function App() {
                 events={events}
                 onEventsChange={setEvents}
                 showMiniCalendar={false}
+                tags={tags}
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -118,6 +169,8 @@ function App() {
                 onEventsChange={setEvents}
                 onTodoDrop={handleTodoDrop}
                 onDeleteEvent={handleDeleteEvent}
+                tags={tags}
+                onTagsChange={setTags}
               />
             </div>
           </div>
@@ -128,6 +181,7 @@ function App() {
             onTodosChange={setTodos}
             events={events}
             onEventsChange={setEvents}
+            tags={tags}
           />
         )}
         {activeView === 'focus' && <PomodoroTimer />}

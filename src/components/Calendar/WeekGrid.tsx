@@ -9,7 +9,7 @@ import {
     endOfDay,
     isWithinInterval
 } from 'date-fns';
-import type { CalendarEvent } from '../../types';
+import type { CalendarEvent, Tag } from '../../types';
 
 interface WeekGridProps {
     currentDate: Date;
@@ -18,9 +18,10 @@ interface WeekGridProps {
     onEventClick: (event: CalendarEvent) => void;
     onEventMove: (eventId: string, newStart: Date) => void;
     onTodoDrop?: (todoId: string, date: Date) => void;
+    tags: Tag[];
 }
 
-const WeekGrid: React.FC<WeekGridProps> = ({ currentDate, events, onDateClick, onEventClick, onEventMove, onTodoDrop }) => {
+const WeekGrid: React.FC<WeekGridProps> = ({ currentDate, events, onDateClick, onEventClick, onEventMove, onTodoDrop, tags }) => {
     const weekStart = startOfWeek(currentDate);
     const weekEnd = endOfWeek(weekStart);
 
@@ -279,6 +280,26 @@ const WeekGrid: React.FC<WeekGridProps> = ({ currentDate, events, onDateClick, o
                                         }}
                                     >
                                         {event.title}
+                                        {event.tagIds && event.tagIds.length > 0 && (
+                                            <div style={{ display: 'flex', gap: '2px', marginTop: '2px', flexWrap: 'wrap' }}>
+                                                {event.tagIds.map(tagId => {
+                                                    const tag = tags.find(t => t.id === tagId);
+                                                    if (!tag) return null;
+                                                    return (
+                                                        <span key={tag.id} style={{
+                                                            fontSize: '9px',
+                                                            padding: '0 2px',
+                                                            borderRadius: '2px',
+                                                            backgroundColor: tag.color + '40',
+                                                            color: 'inherit',
+                                                            border: '1px solid rgba(0,0,0,0.1)'
+                                                        }}>
+                                                            {tag.name}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}

@@ -3,7 +3,7 @@ import { format, addMonths, subMonths } from 'date-fns';
 import MonthGrid from './MonthGrid';
 import WeekGrid from './WeekGrid';
 import EventModal from './EventModal';
-import type { CalendarEvent } from '../../types';
+import type { CalendarEvent, Tag } from '../../types';
 
 type ViewMode = 'month' | 'week';
 
@@ -12,9 +12,11 @@ interface CalendarViewProps {
     onEventsChange: (events: CalendarEvent[]) => void;
     onTodoDrop?: (todoId: string, date: Date) => void;
     onDeleteEvent?: (eventId: string) => void;
+    tags: Tag[];
+    onTagsChange: (tags: Tag[]) => void;
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventsChange, onTodoDrop, onDeleteEvent }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventsChange, onTodoDrop, onDeleteEvent, tags, onTagsChange }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState<ViewMode>(() => {
         return (localStorage.getItem('calendarView') as ViewMode) || 'month';
@@ -154,6 +156,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventsChange, onT
                         onEventClick={handleEventClick}
                         onEventMove={handleEventMove}
                         onTodoDrop={onTodoDrop}
+                        tags={tags}
                     />
                 ) : (
                     <WeekGrid
@@ -163,6 +166,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventsChange, onT
                         onEventClick={handleEventClick}
                         onEventMove={handleEventMove}
                         onTodoDrop={onTodoDrop}
+                        tags={tags}
                     />
                 )}
             </div>
@@ -174,6 +178,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, onEventsChange, onT
                 onDelete={onDeleteEvent}
                 initialDate={selectedDate}
                 existingEvent={selectedEvent}
+                tags={tags}
+                onTagsChange={onTagsChange}
             />
         </div>
     );

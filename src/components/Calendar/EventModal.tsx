@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Modal from '../UI/Modal';
-import type { CalendarEvent } from '../../types';
+import type { CalendarEvent, Tag } from '../../types';
 import { format } from 'date-fns';
 
 interface EventModalProps {
@@ -10,16 +10,22 @@ interface EventModalProps {
     onDelete?: (eventId: string) => void;
     initialDate?: Date;
     existingEvent?: CalendarEvent;
+    tags: Tag[];
+    onTagsChange: (tags: Tag[]) => void;
 }
 
-const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDelete, initialDate, existingEvent }) => {
+const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDelete, initialDate, existingEvent, tags, onTagsChange }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
 
     const [isAllDay, setIsAllDay] = useState(false);
+
     const [isCompleted, setIsCompleted] = useState(false);
+    const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+    const [tagInput, setTagInput] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -30,12 +36,18 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
                 setStartTime(format(new Date(existingEvent.start), "yyyy-MM-dd'T'HH:mm"));
                 setEndTime(format(new Date(existingEvent.end), "yyyy-MM-dd'T'HH:mm"));
                 setIsAllDay(existingEvent.isAllDay || false);
+
                 setIsCompleted(existingEvent.isCompleted || false);
+                setIsCompleted(existingEvent.isCompleted || false);
+                setSelectedTagIds(existingEvent.tagIds || []);
             } else if (initialDate) {
                 setTitle('');
                 setDescription('');
                 setIsAllDay(false);
+
                 setIsCompleted(false);
+                setIsCompleted(false);
+                setSelectedTagIds([]);
                 // Default to 9 AM on the selected date
                 const start = new Date(initialDate);
                 start.setHours(9, 0, 0, 0);
@@ -51,13 +63,37 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Add pending tag if exists
+        let finalTagIds = [...selectedTagIds];
+        if (tagInput.trim()) {
+            const tagName = tagInput.trim();
+            const existingTag = tags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+
+            if (existingTag) {
+                if (!finalTagIds.includes(existingTag.id)) {
+                    finalTagIds.push(existingTag.id);
+                }
+            } else {
+                // Create new tag
+                const newTag: Tag = {
+                    id: crypto.randomUUID(),
+                    name: tagName,
+                    color: '#' + Math.floor(Math.random() * 16777215).toString(16)
+                };
+                onTagsChange([...tags, newTag]);
+                finalTagIds.push(newTag.id);
+            }
+        }
+
         onSave({
             title,
             description,
             start: new Date(startTime),
             end: new Date(endTime),
             isCompleted,
-            isAllDay
+            isAllDay,
+            tagIds: finalTagIds
         });
         onClose();
     };
@@ -118,6 +154,50 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
             </Modal>
         );
     }
+
+    const handleAddTag = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && tagInput.trim()) {
+            e.preventDefault();
+            const tagName = tagInput.trim();
+
+            // Check if tag exists
+            const existingTag = tags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+
+            if (existingTag) {
+                if (!selectedTagIds.includes(existingTag.id)) {
+                    setSelectedTagIds([...selectedTagIds, existingTag.id]);
+                }
+            } else {
+                // Create new tag
+                const newTag: Tag = {
+                    id: crypto.randomUUID(),
+                    name: tagName,
+                    color: '#' + Math.floor(Math.random() * 16777215).toString(16)
+                };
+                onTagsChange([...tags, newTag]);
+                setSelectedTagIds([...selectedTagIds, newTag.id]);
+            }
+            setTagInput('');
+            setShowSuggestions(false);
+        }
+    };
+
+    const selectTag = (tag: Tag) => {
+        if (!selectedTagIds.includes(tag.id)) {
+            setSelectedTagIds([...selectedTagIds, tag.id]);
+        }
+        setTagInput('');
+        setShowSuggestions(false);
+    };
+
+    const removeTag = (tagIdToRemove: string) => {
+        setSelectedTagIds(selectedTagIds.filter(id => id !== tagIdToRemove));
+    };
+
+    const filteredTags = tags.filter(tag =>
+        tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
+        !selectedTagIds.includes(tag.id)
+    );
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={existingEvent ? "Edit Event" : "Add Event"}>
@@ -247,6 +327,117 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
                             color: 'var(--text-primary)'
                         }}
                     />
+                </div>
+
+                <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Tags</label>
+                    <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        padding: '8px',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '4px',
+                        minHeight: '42px',
+                        position: 'relative'
+                    }}>
+                        {selectedTagIds.map(tagId => {
+                            const tag = tags.find(t => t.id === tagId);
+                            if (!tag) return null;
+                            return (
+                                <span key={tag.id} style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '2px 8px',
+                                    borderRadius: '12px',
+                                    backgroundColor: tag.color + '20', // 20% opacity
+                                    fontSize: '12px',
+                                    color: tag.color,
+                                    border: `1px solid ${tag.color}40`
+                                }}>
+                                    {tag.name}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeTag(tag.id)}
+                                        style={{
+                                            border: 'none',
+                                            background: 'none',
+                                            cursor: 'pointer',
+                                            padding: 0,
+                                            fontSize: '14px',
+                                            color: 'inherit',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            opacity: 0.7
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            );
+                        })}
+                        <div style={{ flex: 1, position: 'relative' }}>
+                            <input
+                                type="text"
+                                placeholder="Add tag..."
+                                value={tagInput}
+                                onChange={e => {
+                                    setTagInput(e.target.value);
+                                    setShowSuggestions(true);
+                                }}
+                                onFocus={() => setShowSuggestions(true)}
+                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                onKeyDown={handleAddTag}
+                                style={{
+                                    border: 'none',
+                                    outline: 'none',
+                                    fontSize: '14px',
+                                    color: 'var(--text-primary)',
+                                    background: 'transparent',
+                                    width: '100%',
+                                    minWidth: '60px'
+                                }}
+                            />
+                            {showSuggestions && tagInput && filteredTags.length > 0 && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    right: 0,
+                                    backgroundColor: 'var(--bg-primary)',
+                                    border: '1px solid var(--border-subtle)',
+                                    borderRadius: '4px',
+                                    marginTop: '4px',
+                                    zIndex: 100,
+                                    boxShadow: 'var(--shadow-card)',
+                                    maxHeight: '150px',
+                                    overflowY: 'auto'
+                                }}>
+                                    {filteredTags.map(tag => (
+                                        <div
+                                            key={tag.id}
+                                            onClick={() => selectTag(tag)}
+                                            style={{
+                                                padding: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '14px',
+                                                color: 'var(--text-primary)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                        >
+                                            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: tag.color }} />
+                                            {tag.name}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-sm)', marginTop: 'var(--spacing-sm)' }}>

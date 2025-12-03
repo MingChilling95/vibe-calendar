@@ -11,7 +11,7 @@ import {
     startOfDay,
     endOfDay
 } from 'date-fns';
-import type { CalendarEvent } from '../../types';
+import type { CalendarEvent, Tag } from '../../types';
 
 interface MonthGridProps {
     currentDate: Date;
@@ -20,9 +20,10 @@ interface MonthGridProps {
     onEventClick: (event: CalendarEvent) => void;
     onEventMove: (eventId: string, newStart: Date) => void;
     onTodoDrop?: (todoId: string, date: Date) => void;
+    tags: Tag[];
 }
 
-const MonthGrid: React.FC<MonthGridProps> = ({ currentDate, events, onDateClick, onEventClick, onEventMove, onTodoDrop }) => {
+const MonthGrid: React.FC<MonthGridProps> = ({ currentDate, events, onDateClick, onEventClick, onEventMove, onTodoDrop, tags }) => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(monthStart);
     const startDate = startOfWeek(monthStart);
@@ -165,6 +166,26 @@ const MonthGrid: React.FC<MonthGridProps> = ({ currentDate, events, onDateClick,
                                         }}
                                     >
                                         {event.title}
+                                        {event.tagIds && event.tagIds.length > 0 && (
+                                            <div style={{ display: 'flex', gap: '2px', marginTop: '2px', flexWrap: 'wrap' }}>
+                                                {event.tagIds.map(tagId => {
+                                                    const tag = tags.find(t => t.id === tagId);
+                                                    if (!tag) return null;
+                                                    return (
+                                                        <span key={tag.id} style={{
+                                                            fontSize: '9px',
+                                                            padding: '0 2px',
+                                                            borderRadius: '2px',
+                                                            backgroundColor: tag.color + '40', // 40% opacity for better visibility on colored background
+                                                            color: 'inherit',
+                                                            border: '1px solid rgba(0,0,0,0.1)'
+                                                        }}>
+                                                            {tag.name}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

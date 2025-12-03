@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { isSameDay, format } from 'date-fns';
-import type { Todo, CalendarEvent } from '../../types';
+import type { Todo, CalendarEvent, Tag } from '../../types';
 
 import MonthGrid from '../Calendar/MonthGrid';
 import { addMonths, subMonths } from 'date-fns';
@@ -11,9 +11,10 @@ interface TodoListProps {
     events: CalendarEvent[];
     onEventsChange: (events: CalendarEvent[]) => void;
     showMiniCalendar?: boolean;
+    tags: Tag[];
 }
 
-const TodoList: React.FC<TodoListProps> = ({ todos, onTodosChange, events, onEventsChange, showMiniCalendar = true }) => {
+const TodoList: React.FC<TodoListProps> = ({ todos, onTodosChange, events, onEventsChange, showMiniCalendar = true, tags }) => {
     const [inputValue, setInputValue] = useState('');
     const [calendarDate, setCalendarDate] = useState(new Date());
 
@@ -158,6 +159,26 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onTodosChange, events, onEve
                                                 : `${format(new Date(event.start), 'h:mm a')} - ${format(new Date(event.end), 'h:mm a')}`
                                             }
                                         </span>
+                                        {event.tagIds && event.tagIds.length > 0 && (
+                                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                                {event.tagIds.map(tagId => {
+                                                    const tag = tags.find(t => t.id === tagId);
+                                                    if (!tag) return null;
+                                                    return (
+                                                        <span key={tag.id} style={{
+                                                            fontSize: '10px',
+                                                            padding: '2px 6px',
+                                                            borderRadius: '4px',
+                                                            backgroundColor: tag.color + '20',
+                                                            color: tag.color,
+                                                            border: `1px solid ${tag.color}40`
+                                                        }}>
+                                                            {tag.name}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -245,6 +266,7 @@ const TodoList: React.FC<TodoListProps> = ({ todos, onTodosChange, events, onEve
                             onEventClick={() => { }}
                             onEventMove={() => { }} // Read-only for existing events move in this view for simplicity
                             onTodoDrop={handleTodoDrop}
+                            tags={tags}
                         />
                     </div>
                     <div style={{ marginTop: 'var(--spacing-md)', fontSize: '12px', color: 'var(--text-tertiary)', textAlign: 'center' }}>
